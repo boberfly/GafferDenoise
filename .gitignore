@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Directories
+build/*
+install/*
+dependencies/*/archives
+dependencies/*/working
