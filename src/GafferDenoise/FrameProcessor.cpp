@@ -305,9 +305,9 @@ void FrameProcessor::hashChannelData( const GafferImage::ImagePlug *output, cons
 		Context::EditableScope layerScope( context );
 		std::string layerNameStr = GafferImage::ImageAlgo::layerName( channel );
 		layerScope.set( g_layerNameKey, layerNameStr );
+		layerScope.remove( ImagePlug::tileOriginContextName );
 		//globalScope.set( g_layerNameKey, layerNameStr );
 		colorDataPlug()->hash( h );
-		layerScope.remove( ImagePlug::tileOriginContextName );
 	}
 }
 
@@ -332,8 +332,8 @@ IECore::ConstFloatVectorDataPtr FrameProcessor::computeChannelData( const std::s
 		Context::EditableScope layerScope( context );
 		std::string layerNameStr = GafferImage::ImageAlgo::layerName( channel );
 		layerScope.set( g_layerNameKey, layerNameStr );
-		colorData = boost::static_pointer_cast<const ObjectVector>( colorDataPlug()->getValue() );
 		layerScope.remove( ImagePlug::channelNameContextName );
+		colorData = boost::static_pointer_cast<const ObjectVector>( colorDataPlug()->getValue() );
 	}
 	ConstFloatVectorDataPtr bufferData = boost::static_pointer_cast<const FloatVectorData>( colorData->members()[GafferImage::ImageAlgo::colorIndex( baseName)] );
 
@@ -383,7 +383,23 @@ void FrameProcessor::hashColorData( const Gaffer::Context *context, IECore::Murm
 		if( GafferImage::ImageAlgo::channelExists( channelNames, channelName ) )
 		{
 			channelDataScope.setChannelName( channelName );
-			inPlug()->channelDataPlug()->hash( h );
+			//channelDataScope.setTileOrigin( Imath::V2i(0) );
+			GafferImage::ImageAlgo::parallelGatherTiles(
+				inPlug()->dataWindowPlug(),
+				// Tile
+				[this] ( const ImagePlug *imageP, const Imath::V2i &tileOrigin )
+				{
+					return imageP->channelDataPlug()->hash();
+				},
+				// Gather
+				[ &h ] ( const ImagePlug *imageP, const Imath::V2i &tileOrigin, const IECore::MurmurHash &tileHash )
+				{
+					h.append( tileHash );
+				},
+				Imath::Box2i(),
+				GafferImage::ImageAlgo::TopToBottom
+			);
+			//inPlug()->channelDataPlug()->hash( h );
 		}
 		else
 		{
@@ -394,6 +410,22 @@ void FrameProcessor::hashColorData( const Gaffer::Context *context, IECore::Murm
 	if( unpremult && GafferImage::ImageAlgo::channelExists( channelNames, GafferDenoise::ImageAlgo::channelNameA ) )
 	{
 		channelDataScope.setChannelName( GafferDenoise::ImageAlgo::channelNameA );
-		inPlug()->channelDataPlug()->hash( h );
+		//channelDataScope.setTileOrigin( Imath::V2i(0) );
+		GafferImage::ImageAlgo::parallelGatherTiles(
+			inPlug()->dataWindowPlug(),
+			// Tile
+			[this] ( const ImagePlug *imageP, const Imath::V2i &tileOrigin )
+			{
+				return imageP->channelDataPlug()->hash();
+			},
+			// Gather
+			[ &h ] ( const ImagePlug *imageP, const Imath::V2i &tileOrigin, const IECore::MurmurHash &tileHash )
+			{
+				h.append( tileHash );
+			},
+			Imath::Box2i(),
+			GafferImage::ImageAlgo::TopToBottom
+		);
+		//inPlug()->channelDataPlug()->hash( h );
 	}
 }
