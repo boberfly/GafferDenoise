@@ -93,7 +93,7 @@ class GAFFERDENOISE_API DenoiseOIDN : public FrameProcessor
 
 	protected :
 
-		Gaffer::ValuePlug::CachePolicy computeCachePolicy( const Gaffer::ValuePlug *output ) const override;
+		//Gaffer::ValuePlug::CachePolicy computeCachePolicy( const Gaffer::ValuePlug *output ) const override;
 
 		bool affectsColorData( const Gaffer::Plug *input ) const override;
 		void hashColorData( const Gaffer::Context *context, IECore::MurmurHash &h ) const override;

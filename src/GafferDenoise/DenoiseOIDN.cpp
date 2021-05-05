@@ -205,6 +205,7 @@ const Gaffer::IntPlug *DenoiseOIDN::maxMemoryMBPlug() const
 	return getChild<IntPlug>( g_firstPlugIndex + 10 );
 }
 
+/*
 Gaffer::ValuePlug::CachePolicy DenoiseOIDN::computeCachePolicy( const Gaffer::ValuePlug *output ) const
 {
 	if( output == colorDataPlug() )
@@ -216,6 +217,7 @@ Gaffer::ValuePlug::CachePolicy DenoiseOIDN::computeCachePolicy( const Gaffer::Va
 	}
 	return FrameProcessor::computeCachePolicy( output );
 }
+*/
 
 bool DenoiseOIDN::affectsColorData( const Gaffer::Plug *input ) const
 {
@@ -387,7 +389,9 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 		const char* errorMessage;
 		if( device.getError( errorMessage ) != oidn::Error::None )
 			IECore::msg( IECore::Msg::Error, "GafferOIDN::Denoise", boost::format( "%s" ) % errorMessage );
+
 		*/
+		std::cout << "PROCESSING!" << "\n";
 		ImageAlgo::deinterleave( r, g, b, colorData.get() );
 	}
 }

@@ -277,7 +277,7 @@ Gaffer::ValuePlug::CachePolicy FrameProcessor::computeCachePolicy( const Gaffer:
 	{
 		// This is so when we generate colorData it runs on a single-thread 
 		// and leave the implementation to multi-thread.
-		return ValuePlug::CachePolicy::TaskCollaboration;
+		return ValuePlug::CachePolicy::TaskIsolation;
 	}
 	return ImageProcessor::computeCachePolicy( output );
 }
@@ -301,10 +301,13 @@ void FrameProcessor::hashChannelData( const GafferImage::ImagePlug *output, cons
 	ImageProcessor::hashChannelData( output, context, h );
 	h.append( baseName );
 	{
+		//ImagePlug::GlobalScope globalScope( context );
 		Context::EditableScope layerScope( context );
 		std::string layerNameStr = GafferImage::ImageAlgo::layerName( channel );
 		layerScope.set( g_layerNameKey, layerNameStr );
+		//globalScope.set( g_layerNameKey, layerNameStr );
 		colorDataPlug()->hash( h );
+		layerScope.remove( ImagePlug::tileOriginContextName );
 	}
 }
 
@@ -325,12 +328,34 @@ IECore::ConstFloatVectorDataPtr FrameProcessor::computeChannelData( const std::s
 
 	ConstObjectVectorPtr colorData;
 	{
+		//ImagePlug::GlobalScope globalScope( context );
 		Context::EditableScope layerScope( context );
 		std::string layerNameStr = GafferImage::ImageAlgo::layerName( channel );
 		layerScope.set( g_layerNameKey, layerNameStr );
 		colorData = boost::static_pointer_cast<const ObjectVector>( colorDataPlug()->getValue() );
+		layerScope.remove( ImagePlug::channelNameContextName );
 	}
-	return boost::static_pointer_cast<const FloatVectorData>( colorData->members()[GafferImage::ImageAlgo::colorIndex( baseName)] );
+	ConstFloatVectorDataPtr bufferData = boost::static_pointer_cast<const FloatVectorData>( colorData->members()[GafferImage::ImageAlgo::colorIndex( baseName)] );
+
+	const vector<float> buffer = bufferData->readable();
+
+	int width = parent->format().width();
+	int height = parent->format().height();
+
+	FloatVectorDataPtr resultData = new FloatVectorData;
+	vector<float> &result = resultData->writable();
+	result.reserve( ImagePlug::tileSize() * ImagePlug::tileSize() );
+
+	for( int y = 0; y < ImagePlug::tileSize(); ++y )
+	{
+		for( int x = 0; x < ImagePlug::tileSize(); ++x )
+		{
+			int offset = (tileOrigin.y + y) * width + tileOrigin.x + x;
+			result.push_back( buffer[offset] );
+		}
+	}
+
+	return resultData;
 }
 
 bool FrameProcessor::affectsColorData( const Gaffer::Plug *input ) const
