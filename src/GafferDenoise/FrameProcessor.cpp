@@ -298,6 +298,9 @@ void FrameProcessor::hashChannelData( const GafferImage::ImagePlug *output, cons
 		return;
 	}
 
+	Imath::V2i tileOrigin = context->get<Imath::V2i>( GafferImage::ImagePlug::tileOriginContextName );
+	h.append( tileOrigin );
+
 	ImageProcessor::hashChannelData( output, context, h );
 	h.append( baseName );
 	{
@@ -350,7 +353,7 @@ IECore::ConstFloatVectorDataPtr FrameProcessor::computeChannelData( const std::s
 	{
 		for( int x = 0; x < ImagePlug::tileSize(); ++x )
 		{
-			int offset = (tileOrigin.y + y) * width + tileOrigin.x + x;
+			int offset = (height - 1 - tileOrigin.y - y) * width + tileOrigin.x + x;
 			result.push_back( buffer[offset] );
 		}
 	}
@@ -385,7 +388,7 @@ void FrameProcessor::hashColorData( const Gaffer::Context *context, IECore::Murm
 			channelDataScope.setChannelName( channelName );
 			//channelDataScope.setTileOrigin( Imath::V2i(0) );
 			GafferImage::ImageAlgo::parallelGatherTiles(
-				inPlug()->dataWindowPlug(),
+				inPlug(),
 				// Tile
 				[this] ( const ImagePlug *imageP, const Imath::V2i &tileOrigin )
 				{
@@ -396,7 +399,7 @@ void FrameProcessor::hashColorData( const Gaffer::Context *context, IECore::Murm
 				{
 					h.append( tileHash );
 				},
-				Imath::Box2i(),
+				inPlug()->dataWindowPlug()->getValue(),
 				GafferImage::ImageAlgo::TopToBottom
 			);
 			//inPlug()->channelDataPlug()->hash( h );
@@ -412,7 +415,7 @@ void FrameProcessor::hashColorData( const Gaffer::Context *context, IECore::Murm
 		channelDataScope.setChannelName( GafferDenoise::ImageAlgo::channelNameA );
 		//channelDataScope.setTileOrigin( Imath::V2i(0) );
 		GafferImage::ImageAlgo::parallelGatherTiles(
-			inPlug()->dataWindowPlug(),
+			inPlug(),
 			// Tile
 			[this] ( const ImagePlug *imageP, const Imath::V2i &tileOrigin )
 			{
@@ -423,7 +426,7 @@ void FrameProcessor::hashColorData( const Gaffer::Context *context, IECore::Murm
 			{
 				h.append( tileHash );
 			},
-			Imath::Box2i(),
+			inPlug()->dataWindowPlug()->getValue(),
 			GafferImage::ImageAlgo::TopToBottom
 		);
 		//inPlug()->channelDataPlug()->hash( h );

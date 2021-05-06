@@ -167,7 +167,7 @@ Gaffer.Metadata.registerNode(
 
 		],
 
-		"hdrScale" : [
+		"inputScale" : [
 
 			"description",
 			"""

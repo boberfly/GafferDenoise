@@ -86,7 +86,7 @@ DenoiseOIDN::DenoiseOIDN( const std::string &name )
 	addChild( new StringPlug( "normal", Gaffer::Plug::In, g_normalLayerName ) );
 
 	addChild( new BoolPlug( "hdr", Gaffer::Plug::In, true ) );
-	addChild( new FloatPlug( "hdrScale", Gaffer::Plug::In, 0.0f ) );
+	addChild( new FloatPlug( "inputScale", Gaffer::Plug::In, 0.0f ) );
 	addChild( new BoolPlug( "srgb", Gaffer::Plug::In, false ) );
 	addChild( new IntPlug( "maxMemoryMB", Gaffer::Plug::In, 6000 ) );
 }
@@ -175,12 +175,12 @@ const Gaffer::BoolPlug *DenoiseOIDN::hdrPlug() const
 	return getChild<BoolPlug>( g_firstPlugIndex + 7 );
 }
 
-Gaffer::FloatPlug *DenoiseOIDN::hdrScalePlug()
+Gaffer::FloatPlug *DenoiseOIDN::inputScalePlug()
 {
 	return getChild<FloatPlug>( g_firstPlugIndex + 8 );
 }
 
-const Gaffer::FloatPlug *DenoiseOIDN::hdrScalePlug() const
+const Gaffer::FloatPlug *DenoiseOIDN::inputScalePlug() const
 {
 	return getChild<FloatPlug>( g_firstPlugIndex + 8 );
 }
@@ -205,27 +205,13 @@ const Gaffer::IntPlug *DenoiseOIDN::maxMemoryMBPlug() const
 	return getChild<IntPlug>( g_firstPlugIndex + 10 );
 }
 
-/*
-Gaffer::ValuePlug::CachePolicy DenoiseOIDN::computeCachePolicy( const Gaffer::ValuePlug *output ) const
-{
-	if( output == colorDataPlug() )
-	{
-		// This is so when we generate colorData from OpenImageDenoise,
-		// it runs on a single-thread and the library will multi-thread
-		// internally using TBB.
-		return ValuePlug::CachePolicy::TaskCollaboration;
-	}
-	return FrameProcessor::computeCachePolicy( output );
-}
-*/
-
 bool DenoiseOIDN::affectsColorData( const Gaffer::Plug *input ) const
 {
 	if( FrameProcessor::affectsColorData( input ) )
 	{
 		return true;
 	}
-	else if( 
+	if( 
 		input == inPlug()->channelDataPlug() ||
 		input == inPlug()->channelNamesPlug() ||
 		input == deviceTypePlug() ||
@@ -233,7 +219,7 @@ bool DenoiseOIDN::affectsColorData( const Gaffer::Plug *input ) const
 		input == albedoPlug() ||
 		input == normalPlug() ||
 		input == hdrPlug() ||
-		input == hdrScalePlug() ||
+		input == inputScalePlug() ||
 		input == srgbPlug() 
 	)
 	{
@@ -253,8 +239,9 @@ void DenoiseOIDN::hashColorData( const Gaffer::Context *context, IECore::MurmurH
 	normalPlug()->hash( h );
 
 	hdrPlug()->hash( h );
-	//hdrScalePlug()->hash( h );
+	inputScalePlug()->hash( h );
 	srgbPlug()->hash( h );
+
 }
 
 void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::FloatVectorData *r, IECore::FloatVectorData *g, IECore::FloatVectorData *b ) const
@@ -265,20 +252,8 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 	std::vector<Imath::Color3f> &d = colorData->writable();
 	d.resize( width * height );
 
-	/*
-	std::vector<float> &re = r->writable();
-	std::vector<float> &ge = g->writable();
-	std::vector<float> &be = b->writable();
-
-	std::fill(re.begin(),re.end(), 1.0f);
-	std::fill(ge.begin(),ge.end(), 0.5f);
-	std::fill(be.begin(),be.end(), 0.5f);
-	*/
-
-
 	if( ImageAlgo::interleave( r, g, b, colorData.get() ) )
 	{
-		/*
 		oidn::DeviceRef device = oidn::newDevice( static_cast<oidn::DeviceType>( deviceTypePlug()->getValue() ) );
 		if( device )
 		{
@@ -302,19 +277,23 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 		IECore::FloatVectorDataPtr albedoIn[3];
 		IECore::Color3fVectorDataPtr albedoData = new IECore::Color3fVectorData();
 
-		GafferImage::ImagePlug::ChannelDataScope channelDataScope( context );
+		bool hasNormal = false;
+		IECore::FloatVectorDataPtr normalIn[3];
+		IECore::Color3fVectorDataPtr normalData = new IECore::Color3fVectorData();
 
+		//GafferImage::ImagePlug::ChannelDataScope channelDataScope( context );
 		if( filterType == g_RTFilterName )
 		{
 			GafferImage::ImagePlug::GlobalScope globalScope( context );
+			IECoreImage::ImagePrimitivePtr image = GafferImage::ImageAlgo::image( inPlug() );
+
 			int i = 0;
 			for( const auto &baseName : { "R", "G", "B" } )
 			{
 				string channelName = GafferImage::ImageAlgo::channelName( albedoPlug()->getValue(), baseName );
 				if( GafferImage::ImageAlgo::channelExists( channelNames, channelName ) )
 				{
-					channelDataScope.setChannelName( channelName );
-					albedoIn[i] = inPlug()->channelDataPlug()->getValue()->copy();
+					albedoIn[i] = image->getChannel<float>( channelName );
 				}
 				i++;
 			}
@@ -325,22 +304,14 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 				ad.resize( width * height );
 				hasAlbedo = ImageAlgo::interleave( albedoIn[0].get(), albedoIn[1].get(), albedoIn[2].get(), albedoData.get() );
 			}
-		}
 
-		bool hasNormal = false;
-		IECore::FloatVectorDataPtr normalIn[3];
-		IECore::Color3fVectorDataPtr normalData = new IECore::Color3fVectorData();
-		if( filterType == g_RTFilterName )
-		{
-			GafferImage::ImagePlug::GlobalScope globalScope( context );
-			int i = 0;
+			i = 0;
 			for( const auto &baseName : { "R", "G", "B" } )
 			{
 				string channelName = GafferImage::ImageAlgo::channelName( normalPlug()->getValue(), baseName );
 				if( GafferImage::ImageAlgo::channelExists( channelNames, channelName ) )
 				{
-					channelDataScope.setChannelName( channelName );
-					normalIn[i] = inPlug()->channelDataPlug()->getValue()->copy();
+					normalIn[i] = image->getChannel<float>( channelName );
 				}
 				i++;
 			}
@@ -378,9 +349,11 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 		}
 
 		// OIDN 1.1.0
-		//float hdrScale = hdrScalePlug()->getValue();
-		//if( hdrScale > 0.0f )
-		//filter.set( "hdrScale", hdrScale );
+		float inputScale = inputScalePlug()->getValue();
+		if( inputScale > 0.0f )
+		{
+			filter.set( "inputScale", inputScale );
+		}
 		filter.set( "maxMemoryMB", maxMemoryMBPlug()->getValue() );
 
 		filter.commit();
@@ -388,10 +361,10 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 
 		const char* errorMessage;
 		if( device.getError( errorMessage ) != oidn::Error::None )
+		{
 			IECore::msg( IECore::Msg::Error, "GafferOIDN::Denoise", boost::format( "%s" ) % errorMessage );
+		}
 
-		*/
-		std::cout << "PROCESSING!" << "\n";
 		ImageAlgo::deinterleave( r, g, b, colorData.get() );
 	}
 }

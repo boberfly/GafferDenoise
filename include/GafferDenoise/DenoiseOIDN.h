@@ -82,8 +82,8 @@ class GAFFERDENOISE_API DenoiseOIDN : public FrameProcessor
 		Gaffer::BoolPlug *hdrPlug();
 		const Gaffer::BoolPlug *hdrPlug() const;
 
-		Gaffer::FloatPlug *hdrScalePlug();
-		const Gaffer::FloatPlug *hdrScalePlug() const;
+		Gaffer::FloatPlug *inputScalePlug();
+		const Gaffer::FloatPlug *inputScalePlug() const;
 
 		Gaffer::BoolPlug *srgbPlug();
 		const Gaffer::BoolPlug *srgbPlug() const;
@@ -92,8 +92,6 @@ class GAFFERDENOISE_API DenoiseOIDN : public FrameProcessor
 		const Gaffer::IntPlug *maxMemoryMBPlug() const;
 
 	protected :
-
-		//Gaffer::ValuePlug::CachePolicy computeCachePolicy( const Gaffer::ValuePlug *output ) const override;
 
 		bool affectsColorData( const Gaffer::Plug *input ) const override;
 		void hashColorData( const Gaffer::Context *context, IECore::MurmurHash &h ) const override;
