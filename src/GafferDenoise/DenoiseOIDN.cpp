@@ -270,6 +270,8 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 		oidn::DeviceRef device = oidn::newDevice( static_cast<oidn::DeviceType>( deviceTypePlug()->getValue() ) );
 		if( device )
 		{
+			device.set( "numThreads", numThreadsPlug()->getValue() );
+			device.set( "setAffinity", setAffinityPlug()->getValue() );
 			device.commit();
 		}
 		else
