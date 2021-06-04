@@ -64,5 +64,21 @@
         "thread": "cpp",
         "typeindex": "cpp",
         "variant": "cpp"
-    }
+    },
+
+    "cmake.buildDirectory": "${workspaceFolder}/build/linux_${buildType}",
+    "cmake.installPrefix": "${workspaceFolder}/install/linux_${buildType}",
+    "cmake.environment": {
+        "LD_LIBRARY_PATH": "/home/alex/apps/gaffer-0.59.6.0-linux-python3/lib",
+        "GAFFER_ROOT": "/home/alex/apps/gaffer-0.59.6.0-linux-python3/",
+        "GAFFERDENOISE_INSTALL_PREFIX": "${workspaceFolder}/install/linux_${buildType}",
+    },
+    "cmake.generator": "Unix Makefiles",
+    "cmake.preferredGenerator" : [],
+    "cmake.configureSettings": {
+        "CMAKE_PREFIX_PATH": "${env:GAFFERDENOISE_INSTALL_PREFIX}/lib/cmake:${env:GAFFER_ROOT}",
+        "TBB_ROOT": "${env:GAFFER_ROOT}",
+        "PYTHON_VERSION":"3.7",
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

@@ -213,6 +213,19 @@ Gaffer.Metadata.registerNode(
 
 		],
 
+		"cleanAux" : [
+
+			"description",
+			"""
+			Whether the auxiliary feature (albedo, normal) images are noise-free; 
+			recommended for highest quality but should not be enabled for noisy auxiliary 
+			images to avoid residual noise.
+			""",
+
+			"layout:section", "RT",
+
+		],
+
 	}
 
 )

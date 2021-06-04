@@ -88,7 +88,8 @@ DenoiseOIDN::DenoiseOIDN( const std::string &name )
 	addChild( new BoolPlug( "hdr", Gaffer::Plug::In, true ) );
 	addChild( new FloatPlug( "inputScale", Gaffer::Plug::In, 0.0f ) );
 	addChild( new BoolPlug( "srgb", Gaffer::Plug::In, false ) );
-	addChild( new IntPlug( "maxMemoryMB", Gaffer::Plug::In, 6000 ) );
+	addChild( new IntPlug( "maxMemoryMB", Gaffer::Plug::In, 3000 ) );
+	addChild( new BoolPlug( "cleanAux", Gaffer::Plug::In, false ) );
 }
 
 DenoiseOIDN::~DenoiseOIDN()
@@ -205,6 +206,16 @@ const Gaffer::IntPlug *DenoiseOIDN::maxMemoryMBPlug() const
 	return getChild<IntPlug>( g_firstPlugIndex + 10 );
 }
 
+Gaffer::BoolPlug *DenoiseOIDN::cleanAuxPlug()
+{
+	return getChild<BoolPlug>( g_firstPlugIndex + 11 );
+}
+
+const Gaffer::BoolPlug *DenoiseOIDN::cleanAuxPlug() const
+{
+	return getChild<BoolPlug>( g_firstPlugIndex + 11 );
+}
+
 bool DenoiseOIDN::affectsColorData( const Gaffer::Plug *input ) const
 {
 	if( FrameProcessor::affectsColorData( input ) )
@@ -220,7 +231,8 @@ bool DenoiseOIDN::affectsColorData( const Gaffer::Plug *input ) const
 		input == normalPlug() ||
 		input == hdrPlug() ||
 		input == inputScalePlug() ||
-		input == srgbPlug() 
+		input == srgbPlug() ||
+		input == cleanAuxPlug()
 	)
 	{
 		return true;
@@ -241,6 +253,7 @@ void DenoiseOIDN::hashColorData( const Gaffer::Context *context, IECore::MurmurH
 	hdrPlug()->hash( h );
 	inputScalePlug()->hash( h );
 	srgbPlug()->hash( h );
+	cleanAuxPlug()->hash( h );
 
 }
 
@@ -355,6 +368,8 @@ void DenoiseOIDN::processColorData( const Gaffer::Context *context, IECore::Floa
 			filter.set( "inputScale", inputScale );
 		}
 		filter.set( "maxMemoryMB", maxMemoryMBPlug()->getValue() );
+
+		filter.set( "cleanAux", cleanAuxPlug()->getValue() );
 
 		filter.commit();
 		filter.execute();

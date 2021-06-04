@@ -91,6 +91,9 @@ class GAFFERDENOISE_API DenoiseOIDN : public FrameProcessor
 		Gaffer::IntPlug *maxMemoryMBPlug();
 		const Gaffer::IntPlug *maxMemoryMBPlug() const;
 
+		Gaffer::BoolPlug *cleanAuxPlug();
+		const Gaffer::BoolPlug *cleanAuxPlug() const;
+
 	protected :
 
 		bool affectsColorData( const Gaffer::Plug *input ) const override;

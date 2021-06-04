@@ -29,7 +29,7 @@ Build/Install:
 ```
 mkdir GafferDenoise/cmake-build-default
 cd GafferDenoise/cmake-build-default
-cmake -DGAFFER_ROOT=$GAFFER_ROOT -DCMAKE_INSTALL_PREFIX=$GAFFERDENOISE_INSTALL_PREFIX -DPYTHON_VERSION=3.7 ..
+cmake -DTBB_ROOT=$GAFFER_ROOT -DCMAKE_INSTALL_PREFIX=$GAFFERDENOISE_INSTALL_PREFIX -DPYTHON_VERSION=3.7 ..
 make install -j <num cores>
 ```
 

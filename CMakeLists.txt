@@ -8,10 +8,16 @@ if(APPLE)
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 endif(APPLE)
 
+list(APPEND CMAKE_MODULE_PATH
+    "${PROJECT_SOURCE_DIR}/cmake"
+)
+
+find_package(TBB 2017.0 REQUIRED tbb)
 find_package(OpenImageDenoise REQUIRED)
 
 # build the library
-file( GLOB GafferDenoiseSrc src/GafferDenoise/*.cpp )
+#file( GLOB GafferDenoiseSrc src/GafferDenoise/*.cpp )
+file( GLOB GafferDenoiseSrc src/GafferDenoise/DenoiseOIDN.cpp src/GafferDenoise/FrameProcessor.cpp src/GafferDenoise/ImageAlgo.cpp )
 link_directories( GafferDenoise ${GAFFER_ROOT}/lib )
 add_library( GafferDenoise SHARED ${GafferDenoiseSrc} )
 target_compile_definitions( GafferDenoise PRIVATE BOOST_SIGNALS_NO_DEPRECATION_WARNING=1 -D_GLIBCXX_USE_CXX11_ABI=0 )
